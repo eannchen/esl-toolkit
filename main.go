@@ -40,11 +40,15 @@ func main() {
 		words = append(words, word)
 	}
 
+	// en-GB-News-G
+	// en-GB-Neural2-D * 2
+	// en-GB-Wavenet-D
+
 	// Set the number of words to play
-	numWords := 10
+	numWords := 5
 
 	// Set the pause duration between each word (in seconds)
-	pauseDuration := 6
+	pauseDuration := 3
 
 	// Shuffle the words slice
 	rand.Seed(time.Now().UnixNano())
@@ -55,7 +59,7 @@ func main() {
 
 	time.Sleep(2 * time.Second)
 
-	fmt.Println(len(words))
+	fmt.Println("Total: ", len(words))
 
 	// Loop through the words slice and play each word twice
 	for i := 0; i < numWords; i++ {
