@@ -1,6 +1,6 @@
 package main
 
-import "els-spelling/cmd"
+import "esl-toolkit/cmd"
 
 func main() {
 	cmd.RunSpellingPractice()

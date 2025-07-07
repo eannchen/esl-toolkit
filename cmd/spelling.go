@@ -6,9 +6,9 @@ import (
 	"os"
 	"time"
 
-	"els-spelling/internal/audio"
-	"els-spelling/internal/tts"
-	"els-spelling/internal/words"
+	"esl-toolkit/internal/audio"
+	"esl-toolkit/internal/tts"
+	"esl-toolkit/internal/words"
 )
 
 const (
