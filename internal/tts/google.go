@@ -8,6 +8,7 @@ import (
 	"io"
 	"math/rand"
 	"net/http"
+	"strings"
 )
 
 var voiceNameList = []string{
@@ -60,5 +61,32 @@ func (g *GoogleTTS) SynthesizeSpeech(text, voiceName string) ([]byte, error) {
 		return nil, fmt.Errorf("error decoding JSON: %w", err)
 	}
 
+	return base64.StdEncoding.DecodeString(ac.AudioContent)
+}
+
+func (g *GoogleTTS) SynthesizeSpeechWithRate(text, voiceName string, speakingRate float64) ([]byte, error) {
+	apiURL := fmt.Sprintf("https://texttospeech.googleapis.com/v1/text:synthesize?key=%s", g.APIKey)
+	reqBody := fmt.Sprintf(
+		`{"input": {"text": %q}, "voice": {"languageCode": "en-GB", "name": %q}, "audioConfig": {"audioEncoding": "mp3", "speakingRate": %.2f}}`,
+		text, voiceName, speakingRate,
+	)
+	resp, err := g.Client.Post(apiURL, "application/json", strings.NewReader(reqBody))
+	if err != nil {
+		return nil, fmt.Errorf("error sending request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	audioData, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("error reading response body: %w", err)
+	}
+
+	var ac AudioContent
+	if err = json.Unmarshal(audioData, &ac); err != nil {
+		return nil, fmt.Errorf("error decoding JSON: %w", err)
+	}
+	if ac.AudioContent == "" {
+		return nil, fmt.Errorf("audioContent field is empty in the API response")
+	}
 	return base64.StdEncoding.DecodeString(ac.AudioContent)
 }

@@ -22,3 +22,8 @@ func PlayAudio(audioData []byte) error {
 	cmd := exec.Command("afplay", tmpfile.Name())
 	return cmd.Run()
 }
+
+func PlayAudioFromFile(filePath string) error {
+	cmd := exec.Command("afplay", filePath)
+	return cmd.Run()
+}
