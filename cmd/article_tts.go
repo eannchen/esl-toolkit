@@ -26,8 +26,6 @@ func RunArticleTTS() {
 		return
 	}
 
-	speakingRate := 0.85
-
 	chunks := splitTextIntoChunks(string(text), 5000)
 	var combinedAudio []byte
 
@@ -35,7 +33,7 @@ func RunArticleTTS() {
 	voiceName := googleTTS.GetRandomVoiceName()
 
 	for _, chunk := range chunks {
-		audioData, err := googleTTS.SynthesizeSpeechWithRate(chunk, voiceName, speakingRate)
+		audioData, err := googleTTS.SynthesizeSpeechWithRate(chunk, voiceName, config.ArticleTTSSpeechRate)
 		if err != nil {
 			fmt.Println("Error synthesizing chunk:", err)
 			return

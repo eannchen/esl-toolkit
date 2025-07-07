@@ -8,7 +8,6 @@ import (
 	"io"
 	"math/rand"
 	"net/http"
-	"strings"
 )
 
 var voiceNameList = []string{
@@ -40,37 +39,40 @@ func (g *GoogleTTS) GetRandomVoiceName() string {
 	return voiceNameList[rand.Intn(len(voiceNameList))]
 }
 
-func (g *GoogleTTS) SynthesizeSpeech(text, voiceName string) ([]byte, error) {
-	apiURL := fmt.Sprintf("https://texttospeech.googleapis.com/v1/text:synthesize?key=%s", g.APIKey)
-
-	reqBody := fmt.Sprintf(`{"input": {"text": "%s"}, "voice": {"languageCode": "en-GB", "name": "%s"}, "audioConfig": {"audioEncoding": "mp3"}}`, text, voiceName)
-
-	resp, err := g.Client.Post(apiURL, "application/json", bytes.NewBufferString(reqBody))
-	if err != nil {
-		return nil, fmt.Errorf("error sending request: %w", err)
-	}
-	defer resp.Body.Close()
-
-	audioData, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("error reading response body: %w", err)
-	}
-
-	var ac AudioContent
-	if err = json.Unmarshal(audioData, &ac); err != nil {
-		return nil, fmt.Errorf("error decoding JSON: %w", err)
-	}
-
-	return base64.StdEncoding.DecodeString(ac.AudioContent)
+// synthesizeSpeechRequest holds parameters for a TTS request.
+type synthesizeSpeechRequest struct {
+	Text         string
+	VoiceName    string
+	SpeakingRate *float64 // nil means omit
 }
 
-func (g *GoogleTTS) SynthesizeSpeechWithRate(text, voiceName string, speakingRate float64) ([]byte, error) {
+// synthesizeSpeech is the main internal method for TTS requests.
+func (g *GoogleTTS) synthesizeSpeech(req synthesizeSpeechRequest) ([]byte, error) {
 	apiURL := fmt.Sprintf("https://texttospeech.googleapis.com/v1/text:synthesize?key=%s", g.APIKey)
-	reqBody := fmt.Sprintf(
-		`{"input": {"text": %q}, "voice": {"languageCode": "en-GB", "name": %q}, "audioConfig": {"audioEncoding": "mp3", "speakingRate": %.2f}}`,
-		text, voiceName, speakingRate,
-	)
-	resp, err := g.Client.Post(apiURL, "application/json", strings.NewReader(reqBody))
+
+	// Build request body as a struct for maintainability
+	body := map[string]any{
+		"input": map[string]string{
+			"text": req.Text,
+		},
+		"voice": map[string]string{
+			"languageCode": "en-GB",
+			"name":         req.VoiceName,
+		},
+		"audioConfig": map[string]any{
+			"audioEncoding": "mp3",
+		},
+	}
+	if req.SpeakingRate != nil {
+		body["audioConfig"].(map[string]any)["speakingRate"] = *req.SpeakingRate
+	}
+
+	jsonBody, err := json.Marshal(body)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling request: %w", err)
+	}
+
+	resp, err := g.Client.Post(apiURL, "application/json", bytes.NewReader(jsonBody))
 	if err != nil {
 		return nil, fmt.Errorf("error sending request: %w", err)
 	}
@@ -89,4 +91,21 @@ func (g *GoogleTTS) SynthesizeSpeechWithRate(text, voiceName string, speakingRat
 		return nil, fmt.Errorf("audioContent field is empty in the API response")
 	}
 	return base64.StdEncoding.DecodeString(ac.AudioContent)
+}
+
+// SynthesizeSpeech synthesizes speech with default rate.
+func (g *GoogleTTS) SynthesizeSpeech(text, voiceName string) ([]byte, error) {
+	return g.synthesizeSpeech(synthesizeSpeechRequest{
+		Text:      text,
+		VoiceName: voiceName,
+	})
+}
+
+// SynthesizeSpeechWithRate synthesizes speech with a custom speaking rate.
+func (g *GoogleTTS) SynthesizeSpeechWithRate(text, voiceName string, speakingRate float64) ([]byte, error) {
+	return g.synthesizeSpeech(synthesizeSpeechRequest{
+		Text:         text,
+		VoiceName:    voiceName,
+		SpeakingRate: &speakingRate,
+	})
 }
