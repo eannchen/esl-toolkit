@@ -1,7 +1,21 @@
 package config
 
+import (
+	"os"
+
+	"github.com/joho/godotenv"
+)
+
+var GoogleAPIKey string
+
+func init() {
+	if err := godotenv.Load(); err != nil {
+		panic("Error loading .env file")
+	}
+	GoogleAPIKey = os.Getenv("GOOGLE_API_KEY")
+}
+
 const (
-	GoogleAPIKey                  = "" // Set your Google Text-to-Speech API key here
 	ArticleTTSFile                = "article.txt"
 	ArticleTTSSpeechRate          = 1.0
 	SpellingPracticeFile          = "word_list.txt"
