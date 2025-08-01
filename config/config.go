@@ -10,7 +10,10 @@ var GoogleAPIKey string
 
 func init() {
 	if err := godotenv.Load(); err != nil {
-		panic("Error loading .env file")
+		// Don't panic in test environment
+		if os.Getenv("TESTING") != "true" {
+			panic("Error loading .env file")
+		}
 	}
 	GoogleAPIKey = os.Getenv("GOOGLE_API_KEY")
 }
